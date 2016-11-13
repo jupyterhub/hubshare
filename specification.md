@@ -283,6 +283,7 @@ Status: 200 OK
     }
   }
 ]
+```
 
 ### Add user as a collaborator
 
@@ -303,6 +304,7 @@ PUT /dirs/:owner/:dir/collaborators/:username
     }
     "type": "group"
 }
+```
 
 #### Response
 
