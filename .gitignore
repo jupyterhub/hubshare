@@ -91,3 +91,6 @@ ENV/
 # pbr-generated files
 AUTHORS
 ChangeLog
+
+# Javascript
+node_modules
