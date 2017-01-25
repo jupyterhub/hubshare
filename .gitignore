@@ -87,3 +87,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# pbr-generated files
+AUTHORS
+ChangeLog
