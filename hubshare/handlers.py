@@ -7,21 +7,22 @@ from jupyterhub.services.auth import HubAuthenticated
 from jupyterhub.utils import url_path_join
 
 class BaseHandler(HubAuthenticated, JupyterHubBaseHandler):
-    
+    """A hubshare base handler"""
+
     # register URL patterns
     urls = []
 
     @property
     def hub_auth(self):
         return self.settings.get('hub_auth')
-        
+
 
     @property
     def csp_report_uri(self):
         return self.settings.get('csp_report_uri',
             url_path_join(self.settings.get('hub_base_url', '/hub'), 'security/csp-report')
         )
-    
+
     @property
     def template_namespace(self):
         user = self.get_current_user()
@@ -33,13 +34,13 @@ class BaseHandler(HubAuthenticated, JupyterHubBaseHandler):
             static_url=self.static_url,
             version_hash=self.version_hash,
         )
-    
+
     def finish(self):
         return super(JupyterHubBaseHandler, self).finish()
 
 
 class Template404(BaseHandler):
-    """Render our 404 template"""
+    """Render hubshare's 404 template"""
     urls = ['.*']
 
     def prepare(self):
@@ -47,6 +48,7 @@ class Template404(BaseHandler):
 
 
 class RootHandler(BaseHandler):
+    """Handler for serving hubshare's human facing pages"""
     urls = ['/']
 
     @web.authenticated
