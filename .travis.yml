@@ -1,0 +1,16 @@
+# http://travis-ci.org/#!/jupyter/jupyterhub
+language: python
+sudo: false
+python:
+  - 3.7-dev
+  - 3.6
+  - 3.5
+  - 3.4
+install:
+  - pip install --upgrade pip setuptools pbr wheel
+  - python setup.py bdist_wheel
+  - pip install dist/*.whl -r dev-requirements.txt
+script:
+  - py.test --cov=hubshare hubshare/tests -v
+after_success:
+  - codecov

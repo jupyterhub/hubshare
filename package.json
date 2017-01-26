@@ -1,0 +1,22 @@
+{
+  "name": "hubshare",
+  "version": "0.0.0",
+  "description": "hubshare javascript",
+  "dependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jupyterhub/hubshare.git"
+  },
+  "keywords": [
+    "jupyter"
+  ],
+  "author": "Project Jupyter Contributors",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/jupyterhub/hubshare/issues"
+  },
+  "homepage": "https://github.com/jupyterhub/hubshare#readme"
+}
