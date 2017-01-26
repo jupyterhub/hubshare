@@ -25,4 +25,4 @@ These are explicitly **not** goals and are out of this project's scope:
 
 ## Specification
 
-See [specification.md][specification.md] for the planned spec.
+See [specification.md](specification.md) for the planned spec.
