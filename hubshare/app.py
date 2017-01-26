@@ -34,7 +34,7 @@ TEMPLATES_DIR = os.path.join(ROOT, 'templates')
 
 class UnicodeFromEnv(Unicode):
     """A Unicode trait that gets its default value from the environment
-    
+
     Use .tag(env='VARNAME') to specify the environment variable to use.
     """
     def default(self, obj=None):
@@ -95,7 +95,6 @@ class HubShare(Application):
     template_paths = List(
         help="Paths to search for jinja templates.",
     ).tag(config=True)
-
     @default('template_paths')
     def _template_paths_default(self):
         return [TEMPLATES_DIR]
@@ -119,6 +118,7 @@ class HubShare(Application):
         return "%(color)s[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s %(module)s:%(lineno)d]%(end_color)s %(message)s"
 
     def init_logging(self):
+        """Initialize logging"""
         # This prevents double log messages because tornado use a root logger that
         # self.log is a child of. The logging module dipatches log messages to a log
         # and all of its ancenstors until propagate is set to False.
@@ -143,6 +143,7 @@ class HubShare(Application):
         self.db = None
 
     def init_hub_auth(self):
+        """Initialize hub authentication"""
         self.hub_auth = HubAuth()
 
     def init_tornado_settings(self):
@@ -155,7 +156,7 @@ class HubShare(Application):
             **jinja_options
         )
 
-        # if running from git, disable caching of require.js
+        # if running from git directory, disable caching of require.js
         # otherwise cache based on server start time
         parent = os.path.dirname(ROOT)
         if os.path.isdir(os.path.join(parent, '.git')):
@@ -182,9 +183,9 @@ class HubShare(Application):
         # allow configured settings to have priority
         settings.update(self.tornado_settings)
         self.tornado_settings = settings
-    
+
     def init_handlers(self):
-        """Load our tornado request handlers"""
+        """Load hubshare's tornado request handlers"""
         self.handlers = []
         for handler in handlers.default_handlers + apihandlers.default_handlers:
             for url in handler.urls:
