@@ -1,19 +1,28 @@
 # hubshare
 
-A directory sharing service for JupyterHub.
+[![Build Status](https://travis-ci.org/jupyterhub/jupyterhub.svg?branch=master)](https://travis-ci.org/jupyterhub/jupyterhub)
+[![Google Group](https://img.shields.io/badge/google-group-blue.svg)](https://groups.google.com/forum/#!forum/jupyter)
 
-The goals of this project are to enable simple, coarse sharing of notebooks within a JupyterHub instance.
+A **directory sharing service** for JupyterHub.
+
+*Important: This repo is in early development (it doesn't work).*
+
+## Project goals
+
+This project's primary goal is enabling **simple**, coarse sharing of notebooks within a JupyterHub instance.
+
+The release of JupyterHub v0.7 added support for [**Services**](https://jupyterhub.readthedocs.io/en/latest/services.html). The availability of Services provides the base foundation for a directory sharing service.
 
 General goals:
 
-- sharing unit is directories
-- publish and download are explicit actions (no sharing in-place)
+- The **sharing unit** is directories.
+- **publish** and **download** are explicit actions (no sharing in-place).
 
-Explicitly not goals (out of scope):
+These are explicitly **not** goals and are out of this project's scope:
 
 - In-place or real-time sharing (these are tasks for the single-user server)
 
-This repo is in early development (it doesn't work).
+
+## Specification
 
 See [specification.md][specification.md] for the planned spec.
-
