@@ -73,7 +73,7 @@ class HubShare(Application):
 
     description = __doc__
     aliases = Dict(aliases)
-    classes = List([ContentsManager])
+    classes = List([HubShareManager])
 
     config_file = Unicode('hubshare_config.py',
         help="The config file to load",
@@ -89,7 +89,7 @@ class HubShare(Application):
 
     base_url = Unicode(config=True)
 
-    db_url = Unicode('sqlite:///jupyterhub.sqlite',
+    db_url = Unicode('sqlite:///hubshare.sqlite',
         help="url for the database. e.g. `sqlite:///jupyterhub.sqlite`"
     ).tag(config=True)
 
@@ -211,11 +211,6 @@ class HubShare(Application):
             self.log.debug("Database error was:", exc_info=True)
             # if self.db_url.startswith('sqlite:///'):
             #     self._check_db_path(self.db_url.split(':///', 1)[1])
-            self.log.critical('\n'.join([
-                "If you recently upgraded JupyterHub, try running",
-                "    jupyterhub upgrade-db",
-                "to upgrade your JupyterHub database schema",
-            ]))
             self.exit(1)
 
     def init_logging(self):
@@ -276,7 +271,8 @@ class HubShare(Application):
             xsrf_cookies=True,
             hub_users=self.hub_users,
             db=self.db,
-            contents_manager=self.contents_manager
+            contents_manager=self.contents_manager,
+            allow_remote_access=True
         )
         # allow configured settings to have priority
         settings.update(self.tornado_settings)

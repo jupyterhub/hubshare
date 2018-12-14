@@ -1,18 +1,25 @@
 
 """handlers for human-facing pages"""
 
+import os
 from tornado import web
 from tornado.log import app_log
 from tornado.web import RequestHandler
 from jupyterhub.services.auth import HubAuthenticated
 from jupyterhub.utils import url_path_join
 
-from jupyter_server.base.handlers import path_regex
+from jupyter_server.base.handlers import path_regex as path_re
+from jupyter_server.services.contents.handlers import ContentsHandler as JSContentsManager
+
 from . import orm
 
+# Regular expression shorthands.
+def regex_group(name):
+    return r'(?P<{0}>[^/]+)'.format(name)
 
-user_regex = r'/(?P<user>[^/]+){0}'.format(path_regex)
-owner_regex = r'/(?P<owner>[^/]+){0}'.format(path_regex)
+
+owner_re = regex_group('owner')
+user_re = regex_group('user')
 
 
 class PermissionsMixin(object):
@@ -21,8 +28,31 @@ class PermissionsMixin(object):
     def db(self):
         return self.settings.get('db')
 
+    def dir_in_db(self, dir):
+        pass
 
-class BaseHandler(HubAuthenticated, PermissionsMixin, RequestHandler):
+    def add_dir(self, path):
+        """Add a directory to permissions database."""
+        print('worked')
+        _, name = os.path.split(path)
+        directory = orm.Dir(
+            name=name,
+            parent=path,
+            content_url=path,
+        )
+        self.db.add(directory)
+        self.db.commit()
+
+    def list_dirs(self):
+        for row in self.db.query(orm.Dir).all():
+            print(row)
+
+def validate_model(model):
+    """Validate a dir model."""
+    pass
+
+
+class BaseHandler(HubAuthenticated, PermissionsMixin, JSContentsManager):
     """A hubshare base handler"""
     @property
     def config(self):
@@ -73,21 +103,42 @@ class BaseHandler(HubAuthenticated, PermissionsMixin, RequestHandler):
         template = self.get_template(name)
         return template.render(**template_ns)
 
-    def finish(self):
-        return super(BaseHandler, self).finish()
 
+class RootDirectoryHandler(BaseHandler):
+    """"""
+    @web.authenticated
+    def get(self):
+        "Get a directory list."
+        print('get')
+        pass
+
+
+class UsersRootDirectoryHandler(BaseHandler):
+    """"""
+    @web.authenticated
+    def get(self):
+        "Get a directory list."
+        self.list_dirs()
+
+    @web.authenticated
+    def post(self):
+        """Create a directory."""
+        model = self.get_json_body()
+        self.add_dir(model['name'])
 
 class UsersDirectoryHandler(BaseHandler):
     """"""
     @web.authenticated
-    def get(self, path=''):
+    def get(self, path):
         "Get a directory list."
+        print(path)
         pass
 
     @web.authenticated
-    def post(self, path=''):
+    def post(self, path):
         """Create a directory."""
-        pass
+        model = self.get_json_body()
+
 
 
 class OwnedDirectoryHandler(BaseHandler):
@@ -99,10 +150,12 @@ class OwnedDirectoryHandler(BaseHandler):
 
     @web.authenticated
     def patch(self, owner, path):
+        print(owner, path)
         pass
 
     @web.authenticated
     def delete(self, owner, path):
+        print(owner, path)
         pass
 
 
@@ -151,16 +204,22 @@ class CopiesHandler(BaseHandler):
 # The exported handlers
 default_handlers = [
     # Dirs
-    (r'/dirs', UsersDirectoryHandler),
-    (r'/dirs/(?P<owner>[^/]+){0}'.format(path_regex), OwnedDirectoryHandler),
-    (r'/dirs/(?P<owner>[^/]+){0}/collaborators'.format(path_regex), CollaboratorsListHandler),
-    (r'/dirs/(?P<owner>[^/]+){0}/collaborators/(?P<username>[^/]+)'.format(path_regex),
-     CollaboratorsListHandler),
-    (r'/dirs/(?P<owner>[^/]+){0}/contents'.format(path_regex), ContentsHandler),
-    (r'/dirs/(?P<owner>[^/]+){0}/copies'.format(path_regex), CopiesHandler),
-    (r'/users/dirs', UsersDirectoryHandler),
-    (r'/users/(?P<user>[^/]+){0}/dirs'.format(path_regex), UsersDirectoryHandler),
-
+    (r'/dirs', 
+    RootDirectoryHandler),
+    (r'/dirs/{0}{1}'.format(owner_re, path_re), 
+    OwnedDirectoryHandler),
+    (r'/dirs/{0}{1}/collaborators'.format(owner_re, path_re),
+    CollaboratorsListHandler),
+    (r'/dirs/{0}{1}/collaborators/{2}'.format(owner_re, path_re, user_re),
+    CollaboratorsHandler),
+    (r'/dirs/{0}{1}/contents'.format(owner_re, path_re),
+    ContentsHandler),
+    (r'/dirs/{0}{1}/copies'.format(owner_re, path_re),
+    CopiesHandler),
+    (r'/users/dirs', 
+    UsersRootDirectoryHandler),
+    (r'/users/{0}{1}/dirs'.format(owner_re, path_re),
+    UsersDirectoryHandler),
 ]
 
 
