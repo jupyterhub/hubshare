@@ -7,13 +7,23 @@ from tornado.web import RequestHandler
 from jupyterhub.services.auth import HubAuthenticated
 from jupyterhub.utils import url_path_join
 
+from jupyter_server.base.handlers import path_regex
+from . import orm
 
-class BaseHandler(HubAuthenticated, web.RequestHandler):
+
+user_regex = r'/(?P<user>[^/]+){0}'.format(path_regex)
+owner_regex = r'/(?P<owner>[^/]+){0}'.format(path_regex)
+
+
+class PermissionsMixin(object):
+    """Permissions extension to Contents API."""
+    @property
+    def db(self):
+        return self.settings.get('db')
+
+
+class BaseHandler(HubAuthenticated, PermissionsMixin, RequestHandler):
     """A hubshare base handler"""
-    def prepare(self):
-        super().prepare()
-        self.contents_manager.request = self.request
-
     @property
     def config(self):
         return self.settings.get('config', None)
@@ -33,12 +43,6 @@ class BaseHandler(HubAuthenticated, web.RequestHandler):
     @property
     def hub_users(self):
         return self.settings['hub_users']
-
-    # The next two methods exist to circumvent the basehandler's async
-    # versions of the methods.
-    @property
-    def contents_manager(self):
-        return self.settings['contents_manager']
 
     @property
     def csp_report_uri(self):
@@ -73,29 +77,115 @@ class BaseHandler(HubAuthenticated, web.RequestHandler):
         return super(BaseHandler, self).finish()
 
 
-class Template404(BaseHandler):
-    """Render hubshare's 404 template"""
-
-    def prepare(self):
-        raise web.HTTPError(404)
-
-
-class RootHandler(BaseHandler):
-    """Handler for serving hubshare's human facing pages"""
+class UsersDirectoryHandler(BaseHandler):
+    """"""
+    @web.authenticated
+    def get(self, path=''):
+        "Get a directory list."
+        pass
 
     @web.authenticated
-    def get(self):
-        self.contents_manager.list_dir()
-        html = self.render_template('index.html')
-        self.write(html)
+    def post(self, path=''):
+        """Create a directory."""
+        pass
 
-class NoSlashHandler(BaseHandler):
-    def get(self):
-        self.render_template('index.html')
+
+class OwnedDirectoryHandler(BaseHandler):
+
+    @web.authenticated
+    def get(self, owner, path):
+        print(owner, path)
+        pass
+
+    @web.authenticated
+    def patch(self, owner, path):
+        pass
+
+    @web.authenticated
+    def delete(self, owner, path):
+        pass
+
+
+class CollaboratorsListHandler(BaseHandler):
+
+    @web.authenticated
+    def get(self, owner, path):
+        pass
+
+class CollaboratorsHandler(BaseHandler):
+
+    @web.authenticated
+    def put(self, owner, path, username):
+        pass
+
+    @web.authenticated
+    def delete(self, owner, path, username):
+        pass
+
+class ContentsHandler(BaseHandler):
+
+    @web.authenticated
+    def get(self, owner, path):
+        pass 
+
+    @web.authenticated
+    def put(self, owner, path):
+        pass
+
+    @web.authenticated
+    def delete(self, owner, path):
+        pass
+
+class CopiesHandler(BaseHandler):
+    
+    @web.authenticated
+    def get(self, owner, path):
+        pass
+
+    @web.authenticated
+    def post(self, owner, path):
+        pass
+
+
 
 # The exported handlers
 default_handlers = [
-    (r'', NoSlashHandler),
-    (r'/', RootHandler),
-    (r'.*', Template404)
+    # Dirs
+    (r'/dirs', UsersDirectoryHandler),
+    (r'/dirs/(?P<owner>[^/]+){0}'.format(path_regex), OwnedDirectoryHandler),
+    (r'/dirs/(?P<owner>[^/]+){0}/collaborators'.format(path_regex), CollaboratorsListHandler),
+    (r'/dirs/(?P<owner>[^/]+){0}/collaborators/(?P<username>[^/]+)'.format(path_regex),
+     CollaboratorsListHandler),
+    (r'/dirs/(?P<owner>[^/]+){0}/contents'.format(path_regex), ContentsHandler),
+    (r'/dirs/(?P<owner>[^/]+){0}/copies'.format(path_regex), CopiesHandler),
+    (r'/users/dirs', UsersDirectoryHandler),
+    (r'/users/(?P<user>[^/]+){0}/dirs'.format(path_regex), UsersDirectoryHandler),
+
 ]
+
+
+# class Template404(BaseHandler):
+#     """Render hubshare's 404 template"""
+
+#     def prepare(self):
+#         raise web.HTTPError(404)
+
+
+# class RootHandler(BaseHandler):
+#     """Handler for serving hubshare's human facing pages"""
+
+#     @web.authenticated
+#     def get(self):
+#         self.contents_manager.list_dir()
+#         html = self.render_template('index.html')
+#         self.write(html)
+
+# class NoSlashHandler(BaseHandler):
+#     def get(self):
+#         self.render_template('index.html')
+
+# default_handlers.extend([
+# (r'', NoSlashHandler),
+# (r'/', RootHandler),
+# (r'.*', Template404),
+# )]

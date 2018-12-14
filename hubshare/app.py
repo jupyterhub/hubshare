@@ -23,13 +23,11 @@ from traitlets import (
 )
 
 from jupyterhub.log import CoroutineLogFormatter, log_request
-from jupyterhub.services.auth import HubAuth
 from jupyterhub.utils import url_path_join
 
-
-# Import storage API
-from .contents.webdav import WebDavManager
-
+from sqlalchemy.exc import OperationalError
+from .orm import new_session_factory
+from .contents import HubShareManager
 
 ROOT = os.path.dirname(__file__)
 STATIC_FILES_DIR = os.path.join(ROOT, 'static')
@@ -60,6 +58,12 @@ def get_environ(env_key, default):
     else:
         return default
 
+
+aliases = {
+    'root_dir': 'HubShareManager.root_dir'
+}
+
+
 class HubShare(Application):
     """The HubShare application"""
     @property
@@ -68,6 +72,8 @@ class HubShare(Application):
         return pkg_resources.get_distribution('hubshare').version
 
     description = __doc__
+    aliases = Dict(aliases)
+    classes = List([ContentsManager])
 
     config_file = Unicode('hubshare_config.py',
         help="The config file to load",
@@ -77,12 +83,37 @@ class HubShare(Application):
         help="Generate default config file",
     ).tag(config=True)
 
-    hub_users = List(
-        help="List of white listed users.",
-        config=True
-    )
+    hub_users = List([],
+        help="List of JupyterHub authenticated users."
+    ).tag(config=True)
 
     base_url = Unicode(config=True)
+
+    db_url = Unicode('sqlite:///jupyterhub.sqlite',
+        help="url for the database. e.g. `sqlite:///jupyterhub.sqlite`"
+    ).tag(config=True)
+
+    db_kwargs = Dict(
+        help="""Include any kwargs to pass to the database connection.
+        See sqlalchemy.create_engine for details.
+        """
+    ).tag(config=True)
+
+    upgrade_db = Bool(False,
+        help="""Upgrade the database automatically on start.
+
+        Only safe if database is regularly backed up.
+        Only SQLite databases will be backed up to a local file automatically.
+        """
+    ).tag(config=True)
+    
+    reset_db = Bool(False,
+        help="Purge and reset the database."
+    ).tag(config=True)
+    
+    debug_db = Bool(False,
+        help="log all database transactions. This has A LOT of output"
+    ).tag(config=True)
 
     @default('base_url')
     def _base_url_default(self):
@@ -143,7 +174,7 @@ class HubShare(Application):
     def _template_paths_default(self):
         return [TEMPLATES_DIR]
 
-    contents_manager_cls = WebDavManager
+    contents_manager_cls = HubShareManager
 
     tornado_settings = Dict()
 
@@ -162,6 +193,30 @@ class HubShare(Application):
     def _log_format_default(self):
         """override default log format to include time"""
         return "%(color)s[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s %(module)s:%(lineno)d]%(end_color)s %(message)s"
+
+    def init_db(self):
+        """Create the database connection"""
+        self.log.debug("Connecting to db: %s", self.db_url)
+
+        try:
+            self.session_factory = new_session_factory(
+                self.db_url,
+                reset=self.reset_db,
+                echo=self.debug_db,
+                **self.db_kwargs
+            )
+            self.db = self.session_factory()
+        except OperationalError as e:
+            self.log.error("Failed to connect to db: %s", self.db_url)
+            self.log.debug("Database error was:", exc_info=True)
+            # if self.db_url.startswith('sqlite:///'):
+            #     self._check_db_path(self.db_url.split(':///', 1)[1])
+            self.log.critical('\n'.join([
+                "If you recently upgraded JupyterHub, try running",
+                "    jupyterhub upgrade-db",
+                "to upgrade your JupyterHub database schema",
+            ]))
+            self.exit(1)
 
     def init_logging(self):
         """Initialize logging"""
@@ -220,6 +275,7 @@ class HubShare(Application):
             version_hash=version_hash,
             xsrf_cookies=True,
             hub_users=self.hub_users,
+            db=self.db,
             contents_manager=self.contents_manager
         )
         # allow configured settings to have priority
@@ -245,8 +301,9 @@ class HubShare(Application):
         super().initialize(*args, **kwargs)
         if self.generate_config or self.subapp:
             return
-        self.init_handlers()
+        self.init_db()
         self.init_contents_manager()
+        self.init_handlers()
         self.init_tornado_settings()
         self.init_tornado_application()
 
