@@ -24,12 +24,6 @@ writers_map = Table('writers_map', Base.metadata,
     Column('dir_name', ForeignKey('dirs.name', ondelete='CASCADE'), primary_key=True)
 )
 
-# # dir:user many:many mapping table
-# admins_map = Table('admins_map', Base.metadata,
-#     Column('collaborator_name', ForeignKey('collaborators.name', ondelete='CASCADE'), primary_key=True),
-#     Column('dir_name', ForeignKey('dirs.name', ondelete='CASCADE'), primary_key=True)
-# )
-
 
 class Dir(Base):
     """Object for storing Directories in HubShare's database.

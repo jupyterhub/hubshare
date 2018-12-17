@@ -26,8 +26,10 @@ from jupyterhub.log import CoroutineLogFormatter, log_request
 from jupyterhub.utils import url_path_join
 
 from sqlalchemy.exc import OperationalError
+
 from .orm import new_session_factory
 from .contents import HubShareManager
+from .permissions import PermissionsManager
 
 ROOT = os.path.dirname(__file__)
 STATIC_FILES_DIR = os.path.join(ROOT, 'static')
@@ -37,20 +39,12 @@ TEMPLATES_DIR = os.path.join(ROOT, 'templates')
 def load_handlers(name):
     """Load the (URL pattern, handler) tuples for each component."""
     mod = __import__(name, fromlist=['default_handlers'])
-    return mod.default_handlers
+    handlers = []
+    for handler in mod.default_handlers:
+        for url in handler.urls:
+            handlers.append((url, handler))
+    return handlers
 
-# Waiting for traitlets 5.0
-# class UnicodeFromEnv(Unicode):
-#     """A Unicode trait that gets its default value from the environment
-
-#     Use .tag(env='VARNAME') to specify the environment variable to use.
-#     """
-#     def default(self, obj=None):
-#         env_key = self.metadata.get('env')
-#         if env_key in os.environ:
-#             return os.environ[env_key]
-#         else:
-#             return self.default_value
 
 def get_environ(env_key, default):
     if env_key in os.environ:
@@ -73,7 +67,7 @@ class HubShare(Application):
 
     description = __doc__
     aliases = Dict(aliases)
-    classes = List([HubShareManager])
+    classes = List([HubShareManager, PermissionsManager])
 
     config_file = Unicode('hubshare_config.py',
         help="The config file to load",
@@ -175,6 +169,7 @@ class HubShare(Application):
         return [TEMPLATES_DIR]
 
     contents_manager_cls = HubShareManager
+    permissions_manager_cls = PermissionsManager
 
     tornado_settings = Dict()
 
@@ -197,7 +192,6 @@ class HubShare(Application):
     def init_db(self):
         """Create the database connection"""
         self.log.debug("Connecting to db: %s", self.db_url)
-
         try:
             self.session_factory = new_session_factory(
                 self.db_url,
@@ -206,11 +200,9 @@ class HubShare(Application):
                 **self.db_kwargs
             )
             self.db = self.session_factory()
-        except OperationalError as e:
+        except OperationalError:
             self.log.error("Failed to connect to db: %s", self.db_url)
             self.log.debug("Database error was:", exc_info=True)
-            # if self.db_url.startswith('sqlite:///'):
-            #     self._check_db_path(self.db_url.split(':///', 1)[1])
             self.exit(1)
 
     def init_logging(self):
@@ -234,9 +226,14 @@ class HubShare(Application):
         logger.parent = self.log
         logger.setLevel(self.log.level)
 
-    def init_contents_manager(self):
-        """Initialize the contents manager"""
-        self.contents_manager = self.contents_manager_cls()
+    def init_configurables(self):
+        """Initialize Configurable classes"""
+        self.permissions_managers = self.permissions_manager_cls(
+            self.db, 
+            config=self.config)
+
+        self.contents_manager = self.contents_manager_cls(
+            config=self.config)
 
     def init_tornado_settings(self):
         """Initialize tornado config"""
@@ -269,10 +266,11 @@ class HubShare(Application):
             jinja2_env=jinja_env,
             version_hash=version_hash,
             xsrf_cookies=True,
+            allow_remote_access=True,
             hub_users=self.hub_users,
             db=self.db,
             contents_manager=self.contents_manager,
-            allow_remote_access=True
+            permissions_manager=self.permissions_managers,
         )
         # allow configured settings to have priority
         settings.update(self.tornado_settings)
@@ -283,7 +281,6 @@ class HubShare(Application):
         handlers = []
         handlers.extend(load_handlers('hubshare.handlers'))
         handlers.extend(load_handlers('hubshare.apihandlers'))
-        #handlers.extend(load_handlers('hubshare.handlers'))
         self.handlers = [(url_path_join(self.base_url, url), handler)
                         for url, handler in handlers]
 
@@ -298,7 +295,7 @@ class HubShare(Application):
         if self.generate_config or self.subapp:
             return
         self.init_db()
-        self.init_contents_manager()
+        self.init_configurables()
         self.init_handlers()
         self.init_tornado_settings()
         self.init_tornado_application()
