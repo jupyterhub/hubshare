@@ -1,6 +1,6 @@
 # hubshare
 
-[![Build Status](https://travis-ci.org/jupyterhub/jupyterhub.svg?branch=master)](https://travis-ci.org/jupyterhub/jupyterhub)
+[![TravisCI build status](https://img.shields.io/travis/com/jupyterhub/hubshare?logo=travis)](https://travis-ci.com/jupyterhub/hubshare)
 [![Google Group](https://img.shields.io/badge/google-group-blue.svg)](https://groups.google.com/forum/#!forum/jupyter)
 
 A **directory sharing service** for JupyterHub.
