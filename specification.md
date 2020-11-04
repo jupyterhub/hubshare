@@ -33,7 +33,7 @@ Status: 200 OK
 [
   {
     "id": 123,
-    "owner": {"name": "person1", "type": "user"}
+    "owner": {"name": "person1", "type": "user"},
     "sha": "asdf",
     "name": "data301-assignment01",
     "parent": {
@@ -41,7 +41,7 @@ Status: 200 OK
       "name": "data301-assignment01",
       "owner": {"name": "person2", "type": "user"},
       "sha": "adsf"
-    }
+    },
     "readers": [
       {"name": "person2", "type": "user"},
       {"name": "group1", "type": "group"}
@@ -101,8 +101,7 @@ POST /users/dirs
     {"name": "person2", "type": "user"},
     {"name": "group1", "type": "group"}
   ],
-  "writers": []
-  ],
+  "writers": [],
   "admins": []
 }
 ```
@@ -123,9 +122,8 @@ Status: 201 Created
     {"name": "person2", "type": "user"},
     {"name": "group1", "type": "group"}
   ],
-  "writers": []
-  ],
-  "admins": []
+  "writers": [],
+  "admins": [],
   "content_url": "/api/url_to_get_contents",
   "created_at": "2011-01-26T19:06:43Z",
   "permissions": {
@@ -154,7 +152,7 @@ Status: 200 OK
 ```json
 {
   "id": 123,
-  "owner": {"name": "person1", "type": "user"}
+  "owner": {"name": "person1", "type": "user"},
   "sha": "asdf",
   "name": "data301-assignment01",
   "parent": {
@@ -211,7 +209,7 @@ Status: 200 OK
 ```json
 {
   "id": 123,
-  "owner": {"name": "person1", "type": "user"}
+  "owner": {"name": "person1", "type": "user"},
   "sha": "asdf",
   "name": "data301-assignment01",
   "parent": {
@@ -274,7 +272,7 @@ Status: 200 OK
 ```json
 [
   {
-    "name": person1,
+    "name": "person1",
     "type": "user",
     "permissions": {
       "admin": false,
@@ -301,7 +299,7 @@ PUT /dirs/:owner/:dir/collaborators/:username
       "admin": false,
       "upload": true,
       "download": true
-    }
+    },
     "type": "group"
 }
 ```
@@ -318,7 +316,7 @@ Status: 204 No Content
   "invitee": {
     "name": "group1",
     "type": "group"
-  }
+  },
   "inviter": {
     "name": "person2",
     "type": "user"
