@@ -1,3 +1,5 @@
+**Note**: No current work is planned for this project
+
 # hubshare
 
 [![TravisCI build status](https://img.shields.io/travis/com/jupyterhub/hubshare?logo=travis)](https://travis-ci.com/jupyterhub/hubshare)
